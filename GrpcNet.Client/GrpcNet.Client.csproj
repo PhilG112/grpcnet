@@ -16,12 +16,8 @@
     </PackageReference>
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Protos\" />
-  </ItemGroup>
-
 	<ItemGroup>
-		<Protobuf Include="Protos\greet.proto" GrpcServices="Client" />
+		<Protobuf Include="Protos\ticket.proto" GrpcServices="Client" />
 	</ItemGroup>
 
 </Project>

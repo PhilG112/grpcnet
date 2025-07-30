@@ -1,15 +1,19 @@
-﻿using Grpc.Net.Client;
+﻿using Google.Protobuf.WellKnownTypes;
+using Grpc.Net.Client;
 using GrpcNet.Client;
 using System.Diagnostics;
 
 using var chan = GrpcChannel.ForAddress("http://localhost:5103");
 
-var client = new Greeter.GreeterClient(chan);
-
-for (var i = 0; i < 10; i++)
+var client = new Ticket.TicketClient(chan);
+var tl = new List<TimeSpan>(10000);
+for (var i = 0; i < 10000; i++)
 {
     var startTs = Stopwatch.GetTimestamp();
-    var reply = await client.SayHelloAsync(new HelloRequest { Name = "World" });
+    var reply = client.StoreTicket(new TicketRequest { Key = "myKey", Expiry = Duration.FromTimeSpan(new TimeSpan(1, 10, 10)) });
     var elapsed = Stopwatch.GetElapsedTime(startTs);
-    Console.WriteLine($"Elapsed time: {elapsed.TotalMilliseconds} ms");
+    tl.Add(elapsed);
 }
+
+var avg = tl.Average(ts => ts.Milliseconds);
+Console.WriteLine($"Average time for 10000 requests: {avg} ms");
