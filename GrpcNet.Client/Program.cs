@@ -1,16 +1,22 @@
-﻿using Google.Protobuf.WellKnownTypes;
-using Grpc.Net.Client;
-using GrpcNet.Client;
+﻿using Grpc.Net.Client;
+using GrpcNet.Proto.Contracts.Contracts;
+using GrpcNet.Proto.Contracts.Contracts.Requests;
+using ProtoBuf.Grpc.Client;
 using System.Diagnostics;
 
 using var chan = GrpcChannel.ForAddress("http://localhost:5103");
 
-var client = new Ticket.TicketClient(chan);
+var client = chan.CreateGrpcService<ITicketService>();
 var tl = new List<TimeSpan>(10000);
 for (var i = 0; i < 10000; i++)
 {
     var startTs = Stopwatch.GetTimestamp();
-    var reply = client.StoreTicket(new TicketRequest { Key = "myKey", Expiry = Duration.FromTimeSpan(new TimeSpan(1, 10, 10)) });
+    var reply = client.SetTicketAsync(new TicketRequest
+    {
+        TicketKey = "myKey",
+        Expiry = new TimeSpan(1, 10, 10),
+        SerializedTicket = ""
+    });
     var elapsed = Stopwatch.GetElapsedTime(startTs);
     tl.Add(elapsed);
 }

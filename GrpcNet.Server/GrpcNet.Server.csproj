@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -14,14 +14,15 @@
 	<PackageReference Include="Serilog.Settings.Configuration" Version="9.0.0" />
 	<PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
 	<PackageReference Include="StackExchange.Redis" Version="2.8.58" />
+	<PackageReference Include="protobuf-net.Grpc.AspNetCore" Version="1.2.2" />
   </ItemGroup>
 
-<ItemGroup>
-	<Folder Include="Protos\" />
-</ItemGroup>
+	<!--<ItemGroup>
+		<Protobuf Include="..\GrpcNet.Proto\Protos\ticket.proto" GrpcServices="Server" />
+	</ItemGroup>-->
 
-<ItemGroup>
-	<Protobuf Include="Protos\ticket.proto" GrpcServices="Server" />
-</ItemGroup>
+	<ItemGroup>
+    <ProjectReference Include="..\GrpcNet.Proto\GrpcNet.Proto.Contracts.csproj" />
+  </ItemGroup>
 
 </Project>
