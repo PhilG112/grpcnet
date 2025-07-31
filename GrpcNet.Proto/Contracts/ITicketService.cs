@@ -9,6 +9,12 @@ namespace GrpcNet.Proto.Contracts.Contracts;
 public interface ITicketService
 {
     [OperationContract]
-    Task<TicketReply> SetTicketAsync(TicketRequest ticketRequest, CallContext ctx = default);
+    Task<CreateTicketReply> SetTicketAsync(CreateTicketRequest ticketRequest, CallContext ctx = default);
+
+    [OperationContract]
+    Task<GetTicketReply> GetTicketAsync(GetTicketRequest ticketRequest, CallContext ctx = default);
+
+    [OperationContract]
+    Task<DeleteTicketReply> DeleteTicketAsync(DeleteTicketRequest ticketRequest, CallContext ctx = default);
 }
 
