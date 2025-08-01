@@ -11,7 +11,7 @@ var tl = new List<TimeSpan>(10000);
 for (var i = 0; i < 10000; i++)
 {
     var startTs = Stopwatch.GetTimestamp();
-    var reply = client.SetTicketAsync(new CreateTicketRequest
+    var reply = await client.SetTicketAsync(new CreateTicketRequest
     {
         TicketKey = "myKey",
         Expiry = new TimeSpan(1, 10, 10),

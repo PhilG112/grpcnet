@@ -1,4 +1,5 @@
 using Grpc.Net.Client;
+using GrpcNet.Api;
 using GrpcNet.Api.TicketStore;
 using GrpcNet.Proto.Contracts.Contracts;
 using GrpcNet.Proto.Contracts.Contracts.Requests;
@@ -14,6 +15,10 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddOpenApi();
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddMemoryCache();
+builder.Services.AddHttpClient();
+
+builder.Services.AddSingleton<ITokenService, TokenService>();
 
 builder.Services.AddAuthentication(opts =>
 {
@@ -37,14 +42,12 @@ builder.Services.AddAuthentication(opts =>
         opts.RequireHttpsMetadata = false;
     }
 
-    // Add other scopes as necessary such as infsec:roles
     opts.Scope.Add("profile");
     opts.Scope.Add("openid");
     opts.Scope.Add("offline_access");
     opts.GetClaimsFromUserInfoEndpoint = true;
     opts.ClaimActions.MapAll();
 
-    // Must be true, this is required to save access/id and refresh tokens against the users session.
     opts.SaveTokens = true;
 
     opts.Events.OnRedirectToIdentityProvider = context =>
@@ -67,7 +70,12 @@ builder.Services.AddAuthentication(opts =>
 builder.Services.AddAuthorization();
 
 builder.Services.AddTransient<ICustomTicketStore, CustomTicketStore>();
-builder.Services.AddSingleton(GrpcChannel.ForAddress("http://localhost:5103"));
+builder.Services.AddSingleton(provider =>
+{
+    var tokenService = provider.GetRequiredService<ITokenService>();
+    return AuthenticatedChannelFactory.CreateChannel(tokenService);
+});
+
 builder.Services.AddSingleton(provider =>
 {
     var chan = provider.GetRequiredService<GrpcChannel>();
@@ -107,11 +115,20 @@ app.MapGet("/login", async (HttpContext ctx, IAuthenticationService authService)
 
 app.MapGet("/logout", async (HttpContext ctx, IAuthenticationService authService) =>
 {
-    await authService.SignOutAsync(ctx, CookieAuthenticationDefaults.AuthenticationScheme, new AuthenticationProperties {  RedirectUri = "/" });
+    var authProps = new AuthenticationProperties
+    {
+        RedirectUri = "/"
+    };
+    
+    await authService.SignOutAsync(
+        ctx,
+        CookieAuthenticationDefaults.AuthenticationScheme,
+        authProps);
+    
     await authService.SignOutAsync(
         ctx,
         OpenIdConnectDefaults.AuthenticationScheme,
-        new AuthenticationProperties { RedirectUri = "/" });
+        authProps);
 });
 
 app.MapGet("/resource", async (HttpContext ctx) =>

@@ -1,61 +1,66 @@
-﻿using GrpcNet.Proto.Contracts.Contracts;
+﻿using Grpc.Core;
+using GrpcNet.Proto.Contracts.Contracts;
 using GrpcNet.Proto.Contracts.Contracts.Replies;
 using GrpcNet.Proto.Contracts.Contracts.Requests;
 using GrpcNet.Server.Logging;
+using Microsoft.AspNetCore.Authorization;
 using ProtoBuf.Grpc;
 using StackExchange.Redis;
 
-namespace GrpcNet.Server.Services
+namespace GrpcNet.Server.Services;
+
+[Authorize]
+public class TicketStoreService(
+    IConnectionMultiplexer conn,
+    ILogger<TicketStoreService> logger) : ITicketService
 {
-    public class TicketStoreService(
-        IConnectionMultiplexer conn,
-        ILogger<TicketStoreService> logger) : ITicketService
+    public async Task<DeleteTicketReply> DeleteTicketAsync(DeleteTicketRequest ticketRequest, CallContext ctx = default)
     {
-        public async Task<DeleteTicketReply> DeleteTicketAsync(DeleteTicketRequest ticketRequest, CallContext ctx = default)
+        logger.TicketRequestReceived(LogLevel.Information, ticketRequest.TicketKey);
+        var db = conn.GetDatabase();
+
+        var success = await db.KeyDeleteAsync(ticketRequest.TicketKey);
+
+        return new DeleteTicketReply
         {
-            logger.TicketRequestReceived(LogLevel.Information, ticketRequest.TicketKey);
-            var db = conn.GetDatabase();
+            Success = success
+        };
+    }
 
-            var success = await db.KeyDeleteAsync(ticketRequest.TicketKey);
+    public async Task<GetTicketReply> GetTicketAsync(GetTicketRequest ticketRequest, CallContext ctx = default)
+    {
+        var sc = ctx.ServerCallContext.GetHttpContext().User;
+        logger.LogUserClaims(LogLevel.Debug, sc.Claims.Select(c => new { c.Type, c.Value }));
+        logger.TicketRequestReceived(LogLevel.Information, ticketRequest.TicketKey);
+        
+        var db = conn.GetDatabase();
 
-            return new DeleteTicketReply
-            {
-                Success = success
-            };
-        }
+        var value = await db.StringGetAsync(ticketRequest.TicketKey);
 
-        public async Task<GetTicketReply> GetTicketAsync(GetTicketRequest ticketRequest, CallContext ctx = default)
+        return new GetTicketReply
         {
-            logger.TicketRequestReceived(LogLevel.Information, ticketRequest.TicketKey);
-            
-            var db = conn.GetDatabase();
+            Success = value.HasValue,
+            SerializedTicket = value.ToString()
+        };
+    }
 
-            var value = await db.StringGetAsync(ticketRequest.TicketKey);
+    public async Task<CreateTicketReply> SetTicketAsync(
+        CreateTicketRequest ticketRequest,
+        CallContext ctx = default)
+    {
+        logger.TicketRequestReceived(LogLevel.Information, ticketRequest.TicketKey);
+        
+        var db = conn.GetDatabase();
 
-            return new GetTicketReply
-            {
-                Success = value.HasValue,
-                SerializedTicket = value.ToString()
-            };
-        }
-
-        public async Task<CreateTicketReply> SetTicketAsync(
-            CreateTicketRequest ticketRequest,
-            CallContext ctx = default)
+       await db.StringSetAsync(
+            ticketRequest.TicketKey,
+            ticketRequest.SerializedTicket,
+            ticketRequest.Expiry);
+        
+        return new CreateTicketReply
         {
-            logger.TicketRequestReceived(LogLevel.Information, ticketRequest.TicketKey);
-            
-            var db = conn.GetDatabase();
-
-           await db.StringSetAsync(
-                ticketRequest.TicketKey,
-                ticketRequest.SerializedTicket,
-                ticketRequest.Expiry);
-            
-            return new CreateTicketReply
-            {
-                Success = true
-            };
-        }
+            Success = true
+        };
     }
 }
+
