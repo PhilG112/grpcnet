@@ -2,7 +2,6 @@ using Grpc.Net.Client;
 using GrpcNet.Api;
 using GrpcNet.Api.TicketStore;
 using GrpcNet.Proto.Contracts.Contracts;
-using GrpcNet.Proto.Contracts.Contracts.Requests;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
@@ -12,8 +11,7 @@ using ProtoBuf.Grpc.Client;
 using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
-
-builder.Services.AddOpenApi();
+builder.AddServiceDefaults();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddMemoryCache();
 builder.Services.AddHttpClient();
@@ -98,12 +96,6 @@ var app = builder.Build();
 
 app.UseAuthentication();
 app.UseAuthorization();
-
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-}
-
 
 app.MapGet("/login", async (HttpContext ctx, IAuthenticationService authService) =>
 {

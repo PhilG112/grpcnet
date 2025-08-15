@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFramework>net9.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>66531711-638f-4532-b985-1fc3a764102a</UserSecretsId>
@@ -24,6 +24,7 @@
 	</ItemGroup>-->
 
 	<ItemGroup>
+    <ProjectReference Include="..\GrpcNet.Aspire\GrpcNet.Aspire.ServiceDefaults\GrpcNet.Aspire.ServiceDefaults.csproj" />
     <ProjectReference Include="..\GrpcNet.Proto\GrpcNet.Proto.Contracts.csproj" />
   </ItemGroup>
 

@@ -14,8 +14,6 @@ public class TokenService(
     {
         var result = await cache.GetOrCreateAsync($"{nameof(TokenService)}.{nameof(GetTokenAsync)}", async entry =>
         {
-            logger.LogInformation("NOT FOUND IN CACHE GETTING TOKEN FROM AUTH SERVER");
-            Console.WriteLine("NOT FOUND IN CACHE GETTING TOKEN FROM AUTH SERVER");
             entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(50);
             var client = httpClientFactory.CreateClient();
         
@@ -38,7 +36,6 @@ public class TokenService(
             };
         
             var response = await client.SendAsync(request, cancellationToken);
-        
             if (!response.IsSuccessStatusCode)
             {
                 throw new HttpRequestException($"Failed to retrieve token: {response.StatusCode}");
