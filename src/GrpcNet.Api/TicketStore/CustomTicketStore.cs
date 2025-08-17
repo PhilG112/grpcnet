@@ -17,11 +17,24 @@ public class CustomTicketStore(
 
     public async Task RemoveAsync(string key)
     {
-        await ticketService.DeleteTicketAsync(new DeleteTicketRequest
+        var reply = await ticketService.DeleteTicketAsync(new DeleteTicketRequest
+        {
+            TicketKey = key
+        });
+
+        if (!reply.Success)
+        {
+            var ex = new InvalidOperationException("Failed to delete ticket in Redis.");
+            logger.LogError(ex, "Failed to delete ticket with key {Key}", key);
+            throw ex;
+        }
+
+        await eb.PublishAsync(new TicketDeletedEvent
         {
             TicketKey = key
         });
     }
+
     public Task RenewAsync(string key, AuthenticationTicket ticket)
     {
         throw new NotImplementedException();
@@ -34,7 +47,14 @@ public class CustomTicketStore(
             TicketKey = key
         });
 
-        return reply.Success ? Deserialize(reply.SerializedTicket) : null;
+        var ticket = Deserialize(reply.SerializedTicket);
+
+        await eb.PublishAsync(new TicketRetrievedEvent
+        {
+            TicketKey = key,
+        });
+
+        return reply.Success ? ticket : null;
     }
 
     public async Task<string> StoreAsync(AuthenticationTicket ticket)
