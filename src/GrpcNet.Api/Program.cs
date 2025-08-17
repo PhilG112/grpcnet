@@ -1,6 +1,7 @@
 using Grpc.Net.Client;
 using GrpcNet.Api;
 using GrpcNet.Api.TicketStore;
+using GrpcNet.Events;
 using GrpcNet.Proto.Contracts.Contracts;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -80,10 +81,13 @@ builder.Services.AddSingleton(provider =>
     return chan.CreateGrpcService<ITicketService>();
 });
 
+var cm = ConnectionMultiplexer.Connect(builder.Configuration.GetConnectionString("Redis"));
 builder.Services.AddDataProtection()
     .SetApplicationName("grpcnet")
-    .PersistKeysToStackExchangeRedis(
-            ConnectionMultiplexer.Connect(builder.Configuration.GetConnectionString("Redis")));
+    .PersistKeysToStackExchangeRedis(cm, "grpcnet-keys");
+
+builder.Services.AddSingleton<IConnectionMultiplexer>(cm);
+builder.Services.AddSingleton<IEventBus, RedisEventBus>();
 
 builder.Services.AddSingleton<IDataProtector>(sp =>
 {

@@ -1,4 +1,5 @@
-﻿using GrpcNet.Proto.Contracts.Contracts;
+﻿using GrpcNet.Events;
+using GrpcNet.Proto.Contracts.Contracts;
 using GrpcNet.Proto.Contracts.Contracts.Requests;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.DataProtection;
@@ -9,7 +10,8 @@ namespace GrpcNet.Api.TicketStore;
 public class CustomTicketStore(
     ILogger<CustomTicketStore> logger,
     IDataProtector protector,
-    ITicketService ticketService) : ICustomTicketStore
+    ITicketService ticketService,
+    IEventBus eb) : ICustomTicketStore
 {
     private static readonly TicketSerializer TicketSerializer = new();
 
@@ -48,6 +50,19 @@ public class CustomTicketStore(
             Expiry = expiry,
             SerializedTicket = serializedTicket,
             TicketKey = redisKey
+        });
+
+        if (!ticketReply.Success)
+        {
+            var ex = new InvalidOperationException("Failed to store ticket in Redis.");
+            logger.LogError(ex, "Failed to store ticket with key {Key}", redisKey);
+            throw ex;
+        }
+
+        await eb.PublishAsync(new TicketCreatedEvent
+        {
+            TicketKey = redisKey,
+            SerializedTicket = serializedTicket
         });
 
         return redisKey;
